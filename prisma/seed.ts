@@ -539,6 +539,15 @@ const FAKE: SeedInterview[] = [
 ];
 
 async function main() {
+  const existing = await prisma.interview.count();
+  if (existing > 0) {
+    console.log(
+      `SKIP: database already has ${existing} interviews. ` +
+        "Nothing was changed (run against an empty DB to reseed).",
+    );
+    return;
+  }
+
   console.log("Clearing existing data...");
   await prisma.interviewAnswer.deleteMany();
   await prisma.interviewNote.deleteMany();

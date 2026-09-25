@@ -1,0 +1,103 @@
+// Deployment schema — SQLite (used on Render with a persistent disk).
+// Generated from schema.prisma; ONLY the datasource provider differs.
+// The default client is regenerated from this file during the Render build so
+// the runtime server speaks SQLite against the mounted disk (/var/data/parts.db).
+// Local development keeps using the PostgreSQL schema (schema.prisma).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Interview — one research interview session.
+// ---------------------------------------------------------------------------
+model Interview {
+  id          String          @id @default(cuid())
+  code        Int             @unique
+  status      InterviewStatus @default(DRAFT)
+  verdict     Verdict?
+  sheetStatus SheetStatus     @default(PENDING)
+  sheetError  String?
+  syncedAt    DateTime?
+  summary     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  completedAt DateTime?
+
+  store   Store?
+  notes   InterviewNote[]
+  answers InterviewAnswer[]
+
+  @@index([status])
+  @@index([verdict])
+}
+
+// ---------------------------------------------------------------------------
+// Store — shop information captured at the start of an interview.
+// ---------------------------------------------------------------------------
+model Store {
+  id           String     @id @default(cuid())
+  interview    Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId  String     @unique
+  name         String
+  activityType String
+  yearsActive  String
+  productCount Int?
+  carBrands    String     @default("[]")
+
+  @@index([name])
+}
+
+// ---------------------------------------------------------------------------
+// InterviewAnswer — one structured answer.
+// ---------------------------------------------------------------------------
+model InterviewAnswer {
+  id            String     @id @default(cuid())
+  interview     Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId   String
+  questionKey   String
+  answer        String?
+  answerData    String?
+  questionLabel String
+  questionGroup String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([interviewId, questionKey])
+  @@index([questionKey])
+}
+
+// ---------------------------------------------------------------------------
+// InterviewNote — free-form notes taken by the interviewer over time.
+// ---------------------------------------------------------------------------
+model InterviewNote {
+  id          String     @id @default(cuid())
+  interview   Interview  @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String
+  content     String
+  createdAt   DateTime   @default(now())
+
+  @@index([interviewId])
+}
+
+enum InterviewStatus {
+  DRAFT
+  COMPLETED
+}
+
+enum Verdict {
+  POSITIVE
+  MIXED
+  NEGATIVE
+}
+
+enum SheetStatus {
+  PENDING
+  SYNCED
+  FAILED
+}

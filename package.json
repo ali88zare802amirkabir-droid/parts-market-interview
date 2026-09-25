@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:generate:test": "prisma generate --schema prisma/schema.test.prisma",
+    "prisma:generate:deploy": "prisma generate --schema prisma/schema.deploy.prisma",
+    "prisma:deploy:push": "prisma db push --schema prisma/schema.deploy.prisma",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
