@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireAdmin, jsonError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { interviewInclude, interviewToRow } from "@/lib/repo";
+import { interviewInclude, interviewToRow, insensitiveContains } from "@/lib/repo";
 import { exportInterviewsToCsv } from "@/lib/csv";
 
 export const runtime = "nodejs";
@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
         ...(search
           ? {
               OR: [
-                { store: { is: { name: { contains: search, mode: "insensitive" } } } },
-                { answers: { some: { answer: { contains: search, mode: "insensitive" } } } },
+                { store: { is: { name: insensitiveContains(search) } } },
+                { answers: { some: { answer: insensitiveContains(search) } } },
               ],
             }
           : {}),

@@ -10,6 +10,16 @@ import type { CsvInterviewRow } from "@/lib/csv";
 import { safeJsonParse } from "@/lib/utils";
 import type { AnswerMap } from "@/lib/validate";
 
+// SQLite's Prisma StringFilter has no `mode` option (PostgreSQL's does), and
+// SQLite LIKE is already case-insensitive for ASCII, so only emit `mode` when
+// running against a non-file (PostgreSQL) URL.
+const sqliteRuntime = !!process.env.DATABASE_URL?.startsWith("file:");
+export function insensitiveContains(value: string) {
+  return sqliteRuntime
+    ? { contains: value }
+    : { contains: value, mode: "insensitive" as const };
+}
+
 export const interviewInclude = {
   store: true,
   notes: { orderBy: { createdAt: "asc" as const } },
