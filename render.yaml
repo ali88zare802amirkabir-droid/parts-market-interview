@@ -1,0 +1,46 @@
+# Render blueprint — one-click deploy of the Parts Market Research app.
+#
+# Recommended flow:
+#   1. Create a PostgreSQL instance (Render) and note its "Internal Database URL".
+#   2. Deploy this Web Service; it creates a managed Postgres automatically below.
+#   3. Set the env vars listed under envVars / properties.file.
+#
+# Manual alternative: use the Render Dashboard → New → Web Service → connect repo,
+# build command + start command from below.
+
+databases:
+  - name: parts-research-db
+    databaseName: parts_research
+    plan: free
+    user: parts_research
+
+services:
+  - type: web
+    name: parts-research
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npx prisma db push --skip-generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: parts-research-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USERNAME
+        generateValue: true
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_SHEETS_ENABLED
+        value: "false"
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_SHEET_RANGE
+        value: Sheet1

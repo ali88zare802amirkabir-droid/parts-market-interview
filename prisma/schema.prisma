@@ -1,0 +1,112 @@
+// Main schema — PostgreSQL (production). Test schema lives in schema.test.prisma.
+// NOTE: to stay compatible with both PostgreSQL and the SQLite test runner,
+// array/multi-select values are stored as JSON strings in `String` columns.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Interview — one research interview session.
+// ---------------------------------------------------------------------------
+model Interview {
+  id          String          @id @default(cuid())
+  // Human friendly sequential number (1, 2, 3, ...). Assigned by the app:
+  // (max existing code) + 1. Instead of a DB autoincrement so the schema
+  // stays identical across PostgreSQL (production) and the SQLite test runner.
+  code        Int             @unique
+  status      InterviewStatus @default(DRAFT)
+  // Interviewer's own overall read of the session.
+  verdict     Verdict?
+  // Google Sheets sync state (recorded even when sync is disabled — PENDING).
+  sheetStatus SheetStatus     @default(PENDING)
+  sheetError  String?
+  syncedAt    DateTime?
+  // Free text note entered together with the verdict.
+  summary     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  completedAt DateTime?
+
+  store   Store?
+  notes   InterviewNote[]
+  answers InterviewAnswer[]
+
+  @@index([status])
+  @@index([verdict])
+}
+
+// ---------------------------------------------------------------------------
+// Store — shop information captured at the start of an interview.
+// ---------------------------------------------------------------------------
+model Store {
+  id           String   @id @default(cuid())
+  interview    Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId  String   @unique
+  name         String
+  activityType String
+  yearsActive  String
+  productCount Int?
+  // JSON array of selected car-brand labels.
+  carBrands    String   @default("[]")
+
+  @@index([name])
+}
+
+// ---------------------------------------------------------------------------
+// InterviewAnswer — one structured answer. questionKey maps to the question
+// catalog in lib/questions.ts. New questions can be added later without any
+// schema change; questionLabel/questionGroup are snapshots for offline display.
+// ---------------------------------------------------------------------------
+model InterviewAnswer {
+  id            String   @id @default(cuid())
+  interview     Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId   String
+  questionKey   String
+  // Human readable answer (Persian labels joined for multiselect).
+  answer        String?
+  // Typed payload as a JSON string (number / array / object).
+  answerData    String?
+  questionLabel String
+  questionGroup String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([interviewId, questionKey])
+  @@index([questionKey])
+}
+
+// ---------------------------------------------------------------------------
+// InterviewNote — free-form notes taken by the interviewer over time.
+// ---------------------------------------------------------------------------
+model InterviewNote {
+  id          String   @id @default(cuid())
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String
+  content     String
+  createdAt   DateTime @default(now())
+
+  @@index([interviewId])
+}
+
+enum InterviewStatus {
+  DRAFT
+  COMPLETED
+}
+
+enum Verdict {
+  POSITIVE
+  MIXED
+  NEGATIVE
+}
+
+enum SheetStatus {
+  PENDING
+  SYNCED
+  FAILED
+}

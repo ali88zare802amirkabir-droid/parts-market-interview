@@ -1,0 +1,90 @@
+// Test schema — SQLite. Must stay structurally in sync with schema.prisma
+// so that the test runner can exercise the full data layer with zero
+// external services. Generated to ./generated/prisma-test (gitignored).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma-test"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+model Interview {
+  id          String          @id @default(cuid())
+  code        Int             @unique
+  status      InterviewStatus @default(DRAFT)
+  verdict     Verdict?
+  sheetStatus SheetStatus     @default(PENDING)
+  sheetError  String?
+  syncedAt    DateTime?
+  summary     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  completedAt DateTime?
+
+  store   Store?
+  notes   InterviewNote[]
+  answers InterviewAnswer[]
+
+  @@index([status])
+  @@index([verdict])
+}
+
+model Store {
+  id           String   @id @default(cuid())
+  interview    Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId  String   @unique
+  name         String
+  activityType String
+  yearsActive  String
+  productCount Int?
+  carBrands    String   @default("[]")
+
+  @@index([name])
+}
+
+model InterviewAnswer {
+  id            String   @id @default(cuid())
+  interview     Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId   String
+  questionKey   String
+  answer        String?
+  answerData    String?
+  questionLabel String
+  questionGroup String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([interviewId, questionKey])
+  @@index([questionKey])
+}
+
+model InterviewNote {
+  id          String   @id @default(cuid())
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewId String
+  content     String
+  createdAt   DateTime @default(now())
+
+  @@index([interviewId])
+}
+
+enum InterviewStatus {
+  DRAFT
+  COMPLETED
+}
+
+enum Verdict {
+  POSITIVE
+  MIXED
+  NEGATIVE
+}
+
+enum SheetStatus {
+  PENDING
+  SYNCED
+  FAILED
+}
