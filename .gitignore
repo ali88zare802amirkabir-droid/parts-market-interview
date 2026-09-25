@@ -17,6 +17,8 @@ build/
 # prisma
 prisma/test.db
 prisma/test.db-journal
+prisma/*.db
+prisma/*.db-journal
 prisma/migrations/dev/
 
 # generated test client
